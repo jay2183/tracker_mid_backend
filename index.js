@@ -1,0 +1,43 @@
+const express = require('express');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/authRoutes');
+// const userRoutes = require('./routes/userRoutes');
+// const chatRoutes = require('./routes/chatRoutes');
+// const productRoutes = require('./routes/productRoutes');
+// const unitRoutes = require('./routes/unitRoutes');
+// const categoryRoutes = require('./routes/categoryRoutes');
+// const formDataRoutes = require('./routes/formDataRoutes');
+// const searchRoutes = require('./routes/searchRoutes');
+// const favoriteRoutes = require('./routes/favoriteRoutes');
+// const ratingRoutes = require('./routes/ratingRoutes');
+// const deviceTokenRoutes = require('./routes/deviceTokenRoutes');
+// const notificationRoutes = require('./routes/notificationRoutes');
+const connectDB = require('./config/db');
+// const setupSocket = require('./config/socket');
+// const setupSocket2 = require('./config/socketTwo');
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 5004;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Middleware
+app.use(express.json());
+// app.use('/uploads', express.static('uploads'));
+// Routes
+app.use('/api/auth', authRoutes);
+// app.use('/api/user', userRoutes);
+// app.use('/api/products', productRoutes);
+// // app.use('/api/chats', chatRoutes);
+// app.use('/api/chat',chatRoutes);
+// app.use('/api/unit',unitRoutes);
+// app.use('/api/category',categoryRoutes);
+// app.use('/api/formData',formDataRoutes);
+// app.use('/api/searchList',searchRoutes);
+// app.use('/api/favorite',favoriteRoutes);
+// app.use('/api/rate',ratingRoutes);
+// app.use('/api/device-token',deviceTokenRoutes);
+// app.use('/api/notification',notificationRoutes);
+const server = require('http').createServer(app);
+// setupSocket2(server);
+// MongoDB Connection
+connectDB();
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
