@@ -1,120 +1,88 @@
-const jwt = require('jsonwebtoken');
+
+require('dotenv').config();
 const User = require('../models/user');
-const otpService = require('../services/otpService');
-// const { messaging } = require('firebase-admin');
-// const Unit = require('../models/unit');
-// const otpService = require('../services/otpService');
-exports.login = async (req, res) => {
-  const { phone,countryCode } = req.body;
-  console.log("body==", req.body);
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
-  if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-  if(!countryCode) return res.status(400).json({message:'Country code is required'})
-  let user = await User.findOne({ phone });
+const OTP_STORAGE = {}; // Temporary store for OTPs (use Redis for production)
 
-  const existingUser = await User.findOne({ phone,countryCode });
-  if (existingUser) {
-
-    if (!user) {
-      user = new User({ phone,countryCode });
-      await user.save();
+// Nodemailer setup
+const transporter = nodemailer.createTransport({
+    // service: "gmail",
+    // auth: {
+       
+    //     user: process.env.EMAIL,
+    //     pass: process.env.EMAIL_PASSWORD
+    // }
+    // service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465, // 587 for TLS, 465 for SSL
+    secure: true, 
+    auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD
     }
-  } else {
-
-    user = await User.create({ phone,countryCode });
-
-  }
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-  res.json({ token, user });
-};
-exports.sendOtp = async (req, res) => {
-
-  const { phone,countryCode } = req.body;
-  console.log("body==", req.body);
-
-  if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-  if (!countryCode) return res.status(400).json({ message: 'Country code is required' });
-  const cPhone = countryCode+phone;
-  const response = await otpService.sendOtp(cPhone);
-  return res.status(response.success ? 200 : 500).json(response);
-}
+});
 
 
-exports.verifyOtp = async (req, res) => {
-  const { phone, otp,countryCode } = req.body;
-  if (!phone || !otp) {
-    return res.status(400).json({ success: false, message: 'Phone number and OTP are required' });
-  }
-  if(!countryCode) return res.status(400).json({message:'Country code is required'})
+// Generate OTP function
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-    const response = await otpService.verifyOtp(phone, otp);
+// Send OTP via email
+exports.sendOTP = async (req, res) => {
+    const { email } = req.body;
+   console.log("email ==",email);
+   
+    if (!email) return res.status(400).json({ message: "Email is required" });
 
-    if (response.success) {
-      const defaultUnits = [
-        { unitName: 'Kilogram', shortName: 'kg' },
-        { unitName: 'Meter', shortName: 'm' },
-        { unitName: 'Piece', shortName: 'pcs' },
-      ];
-    
-      let user = await User.findOne({ phone });
-    
-      if (!user) {
-        // If the user does not exist, create a new user
-        user = new User({ phone, countryCode });
-        await user.save();
-    
-        // Assign default units to the new user
-        const unitsWithUserId = defaultUnits.map((unit) => ({
-          ...unit,
-          userId: user._id,
-        }));
-        await Unit.insertMany(unitsWithUserId);
-      } else {
-        // Check if the default units already exist for this user
-        const existingUnits = await Unit.find({ userId: user._id });
-        if (existingUnits.length === 0) {
-          const unitsWithUserId = defaultUnits.map((unit) => ({
-            ...unit,
-            userId: user._id,
-          }));
-          await Unit.insertMany(unitsWithUserId);
-        }
-      }
-    
-      // Generate token and send response
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-      res.json({ token, user });
-    } else {
-      return res.status(response.success ? 200 : 500).json(response);
-    }
-    
-};
+    const otp = generateOTP();
+    OTP_STORAGE[email] = otp; // Store OTP in-memory
 
-
-exports.registerUser = async (req, res) => {
-  const { phone } = req.body;
-  console.log("body==", req.body);
-
-  if (!phone) {
-    return res.status(400).json({ message: 'Phone number is required' });
-  }
-
-  try {
-
-    const existingUser = await User.findOne({ phone });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Phone number already registered' });
-    }
-
-
-    const newUser = await User.create({ phone });
-
-    return res.status(201).json({
-      message: 'User registered successfully',
-      user: newUser,
+    const mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: "Your OTP Code For TRACKIO App",
+        
+        text: `${otp} is your OTP for registering TRACKIO mobile app. Do not share it with anyone.`,
+        html: `<p>Your OTP code is <b>${otp}</b></p>`
+    };
+   console.log("sender email ==",process.env.EMAIL,
+ process.env.EMAIL_PASSWORD);
+//  let info = await transporter.sendMail(mailOptions);
+//  console.log('Email sent: %s', info.messageId);
+    transporter.sendMail(mailOptions, (err, info) => {
+        console.log("error sending mail==",err);
+        
+        if (err) return res.status(500).json({ message: "Error sending OTP", error: err });
+        res.json({ message: `OTP sent successfully on ${email}.` });
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
-  }
 };
+
+// Verify OTP and register user
+exports.verifyOTP = async (req, res) => {
+    const { name, email, otp } = req.body;
+
+    if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
+
+    if (OTP_STORAGE[email] !== otp) return res.status(400).json({ message: "Invalid OTP" });
+
+    delete OTP_STORAGE[email]; // Remove OTP after successful verification
+
+    let user = await User.findOne({ email });
+    if (!user) {
+        user = new User({ name, email });
+        await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    const mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: `Email ${email} verified`,
+        text: `Email verified successfully from TRACKIO App`,
+        text: `Dear User, TRACKIO app successfully enabled`,        
+    };
+    transporter.sendMail(mailOptions)
+    res.json({ message: "Email verified successfully", token:token ,userId:user._id,email:email });
+};
+
