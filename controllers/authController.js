@@ -10,14 +10,14 @@ const OTP_STORAGE = {}; // Temporary store for OTPs (use Redis for production)
 const transporter = nodemailer.createTransport({
     // service: "gmail",
     // auth: {
-       
+
     //     user: process.env.EMAIL,
     //     pass: process.env.EMAIL_PASSWORD
     // }
     // service: "gmail",
     host: "smtp.gmail.com",
     port: 465, // 587 for TLS, 465 for SSL
-    secure: true, 
+    secure: true,
     auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASSWORD
@@ -31,8 +31,8 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 // Send OTP via email
 exports.sendOTP = async (req, res) => {
     const { email } = req.body;
-   console.log("email ==",email);
-   
+    console.log("email ==", email);
+
     if (!email) return res.status(400).json({ message: "Email is required" });
 
     const otp = generateOTP();
@@ -42,17 +42,17 @@ exports.sendOTP = async (req, res) => {
         from: process.env.EMAIL,
         to: email,
         subject: "Your OTP Code For TRACKIO App",
-        
+
         text: `${otp} is your OTP for registering TRACKIO mobile app. Do not share it with anyone.`,
         html: `<p>Your OTP code is <b>${otp}</b></p>`
     };
-   console.log("sender email ==",process.env.EMAIL,
- process.env.EMAIL_PASSWORD);
-//  let info = await transporter.sendMail(mailOptions);
-//  console.log('Email sent: %s', info.messageId);
+    console.log("sender email ==", process.env.EMAIL,
+        process.env.EMAIL_PASSWORD);
+    //  let info = await transporter.sendMail(mailOptions);
+    //  console.log('Email sent: %s', info.messageId);
     transporter.sendMail(mailOptions, (err, info) => {
-        console.log("error sending mail==",err);
-        
+        console.log("error sending mail==", err);
+
         if (err) return res.status(500).json({ message: "Error sending OTP", error: err });
         res.json({ message: `OTP sent successfully on ${email}.` });
     });
@@ -112,7 +112,7 @@ exports.verifyOTP = async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            expiresIn: '1h', // Optional: Set token expiration
+            // expiresIn: '1h', // Optional: Set token expiration
         });
 
         // Configure email options
