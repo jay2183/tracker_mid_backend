@@ -1,7 +1,7 @@
 const Subscription = require('../models/subscription');
 
 // Debug: Log the Subscription model to check available methods
-console.log('Subscription model methods:', Object.keys(Subscription));
+// console.log('Subscription model methods:', Object.keys(Subscription));
 
 // Create or update subscription
 exports.createOrUpdateSubscription = async (req, res) => {

@@ -2,6 +2,10 @@ const express = require('express');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const companyFeatureRoutes = require('./routes/companyfeatureRoutes');
+const individualFeatureRoutes = require('./routes/individualFeatureRoutes');
+const attendanceRoutes = require('./routes/atttendanceRoutes');
+const trackingRoutes = require('./routes/trackingRoutes');
 // const userRoutes = require('./routes/userRoutes');
 // const chatRoutes = require('./routes/chatRoutes');
 
@@ -18,6 +22,10 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/companyFeature', companyFeatureRoutes);
+app.use('/api/indiVidualFeature', individualFeatureRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/tracking', trackingRoutes);
 // app.use('/api/user', userRoutes);
 // app.use('/api/products', productRoutes);
 
