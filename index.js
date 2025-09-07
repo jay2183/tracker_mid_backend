@@ -8,6 +8,7 @@ const attendanceRoutes = require('./routes/atttendanceRoutes');
 const trackingRoutes = require('./routes/trackingRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 // const userRoutes = require('./routes/userRoutes');
 // const chatRoutes = require('./routes/chatRoutes');
 
@@ -30,6 +31,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api/profile', profileRoutes);
 // app.use('/api/user', userRoutes);
 // app.use('/api/products', productRoutes);
 

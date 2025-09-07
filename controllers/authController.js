@@ -58,13 +58,15 @@ exports.sendOTP = async (req, res) => {
     });
 };
 
-
 exports.verifyOTP = async (req, res) => {
-    const { name, email, otp } = req.body;
+    const { name, email, otp, userType } = req.body;
 
     // Validate input
     if (!email || !otp) {
         return res.status(400).json({ message: "Email and OTP are required" });
+    }
+    if (userType && !['company', 'individual'].includes(userType)) {
+        return res.status(400).json({ message: "Invalid userType. Must be 'company' or 'individual'" });
     }
 
     // Verify OTP
@@ -79,16 +81,18 @@ exports.verifyOTP = async (req, res) => {
         // Check if user exists, create new user if not
         let user = await User.findOne({ email });
         if (!user) {
-            user = new User({ name, email });
+            user = new User({ name, email, userType: userType || 'pending' });
+            await user.save();
+        } else if (userType && user.userType === 'pending') {
+            // Update userType if provided and user is still pending
+            user.userType = userType;
             await user.save();
         }
 
         // Generate JWT token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            // expiresIn: '1h', // Optional: Set token expiration
-        });
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
 
-        // Configure email options
+        // Send verification email
         const mailOptions = {
             from: process.env.EMAIL,
             to: email,
@@ -97,25 +101,87 @@ exports.verifyOTP = async (req, res) => {
             html: `<p>Dear ${name || 'User'},</p><p>Your email <b>${email}</b> has been successfully verified for the TRACKIO app.</p>`,
         };
 
-        // Send verification email
-        await transporter.sendMail(mailOptions, (err, info) => {
+        transporter.sendMail(mailOptions, (err, info) => {
             if (err) {
                 console.error("Error sending verification email:", err);
-                return res.status(500).json({ message: "Error sending verification email", error: err.message });
+                // Don't fail the request, just log the error
             }
-            console.log("Verification email sent:", info.messageId);
         });
 
-        // Respond with success
+        // Respond with user details and navigation info
         return res.status(200).json({
             message: "Email verified successfully",
             token,
             userId: user._id,
             email,
+            userType: user.userType,
+            nextStep: user.userType === 'pending' 
+                ? 'Select user type and complete profile' 
+                : `Navigate to ${user.userType} profile setup`
         });
     } catch (error) {
         console.error("Error in verifyOTP:", error);
         return res.status(500).json({ message: "Server error during OTP verification", error: error.message });
     }
 };
+
+// exports.verifyOTP = async (req, res) => {
+//     const { name, email, otp } = req.body;
+
+//     // Validate input
+//     if (!email || !otp) {
+//         return res.status(400).json({ message: "Email and OTP are required" });
+//     }
+
+//     // Verify OTP
+//     if (OTP_STORAGE[email] !== otp) {
+//         return res.status(400).json({ message: "Invalid OTP" });
+//     }
+
+//     // Remove OTP after verification
+//     delete OTP_STORAGE[email];
+
+//     try {
+//         // Check if user exists, create new user if not
+//         let user = await User.findOne({ email });
+//         if (!user) {
+//             user = new User({ name, email });
+//             await user.save();
+//         }
+
+//         // Generate JWT token
+//         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+//             // expiresIn: '1h', // Optional: Set token expiration
+//         });
+
+//         // Configure email options
+//         const mailOptions = {
+//             from: process.env.EMAIL,
+//             to: email,
+//             subject: "Email Verification Successful - TRACKIO App",
+//             text: `Dear ${name || 'User'}, your email ${email} has been successfully verified for the TRACKIO app.`,
+//             html: `<p>Dear ${name || 'User'},</p><p>Your email <b>${email}</b> has been successfully verified for the TRACKIO app.</p>`,
+//         };
+
+//         // Send verification email
+//         await transporter.sendMail(mailOptions, (err, info) => {
+//             if (err) {
+//                 console.error("Error sending verification email:", err);
+//                 return res.status(500).json({ message: "Error sending verification email", error: err.message });
+//             }
+//             console.log("Verification email sent:", info.messageId);
+//         });
+
+//         // Respond with success
+//         return res.status(200).json({
+//             message: "Email verified successfully",
+//             token,
+//             userId: user._id,
+//             email,
+//         });
+//     } catch (error) {
+//         console.error("Error in verifyOTP:", error);
+//         return res.status(500).json({ message: "Server error during OTP verification", error: error.message });
+//     }
+// };
 
