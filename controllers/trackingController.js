@@ -129,6 +129,46 @@ exports.getTracking = async (req, res) => {
         });
     }
 };
+exports.getTrackingByParamUserId = async (req, res) => {
+    try {
+        const  userId  = req.params.id;
+        const { startDate, endDate, page = 1, limit = 10 } = req.query;
+
+        const query = { userId };
+        if (startDate && endDate) {
+            query.timestamp = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        const trackings = await Tracking.find(query)
+            .populate('_individualFeature')
+            .populate('userId')
+            .sort({ timestamp: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        const total = await Tracking.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            data: trackings,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
 
 // PATCH: Update a tracking record
 exports.updateTracking = async (req, res) => {

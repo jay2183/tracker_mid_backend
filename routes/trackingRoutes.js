@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createTracking, getTracking,updateTracking } = require('../controllers/trackingController');
+const { createTracking, getTracking,updateTracking,getTrackingByParamUserId } = require('../controllers/trackingController');
 const  authMiddleware  = require('../middleware/authMiddleware');
 
 // Debug imports
@@ -15,6 +15,7 @@ const  authMiddleware  = require('../middleware/authMiddleware');
 // Routes
 router.post('/', authMiddleware, createTracking);
 router.get('/', authMiddleware, getTracking);
+router.get('/param/:id', authMiddleware, getTrackingByParamUserId);
 
 router.patch('/:id', authMiddleware, updateTracking);
 

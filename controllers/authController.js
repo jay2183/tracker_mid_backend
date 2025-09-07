@@ -58,33 +58,6 @@ exports.sendOTP = async (req, res) => {
     });
 };
 
-// Verify OTP and register user
-// exports.verifyOTP = async (req, res) => {
-//     const { name, email, otp } = req.body;
-
-//     if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
-
-//     if (OTP_STORAGE[email] !== otp) return res.status(400).json({ message: "Invalid OTP" });
-
-//     delete OTP_STORAGE[email]; // Remove OTP after successful verification
-
-//     let user = await User.findOne({ email });
-//     if (!user) {
-//         user = new User({ name, email });
-//         await user.save();
-//     }
-
-//     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-//     const mailOptions = {
-//         from: process.env.EMAIL,
-//         to: email,
-//         subject: `Email ${email} verified`,
-//         text: `Email verified successfully from TRACKIO App`,
-//         text: `Dear User, TRACKIO app successfully enabled`,        
-//     };
-//     transporter.sendMail(mailOptions)
-//     res.json({ message: "Email verified successfully", token:token ,userId:user._id,email:email });
-// };
 
 exports.verifyOTP = async (req, res) => {
     const { name, email, otp } = req.body;
